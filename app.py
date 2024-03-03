@@ -11,7 +11,6 @@ app = Flask(__name__)
 # dictionary to store key pairs with their associated data
 keys = {}
 
-
 def generate_rsa_keypair(kid, expiry_days):
     # generates RSA key pair
     private_key = rsa.generate_private_key(
@@ -47,10 +46,13 @@ def generate_rsa_keypair(kid, expiry_days):
         'public_key': public_key_pem
     }
 
-
 def get_jwks():
     # filters out expired keys
     valid_keys = [keys[kid] for kid in keys if keys[kid]['expiry'] > datetime.utcnow()]
+
+    # if no valid keys are available, return a meaningful response
+    if not valid_keys:
+        return {'error': 'No valid keys available'}, 404
 
     # prepares JWKS format
     jwks = {
@@ -65,11 +67,9 @@ def get_jwks():
     }
     return jwks
 
-
 @app.route('/jwks', methods=['GET'])
 def jwks():
     return jsonify(get_jwks())
-
 
 @app.route('/auth', methods=['POST'])
 def auth():
@@ -90,7 +90,6 @@ def auth():
     token = jwt.encode(payload, private_key, algorithm='RS256')
 
     return token
-
 
 if __name__ == '__main__':
     # generates RSA key pairs with associated data
